@@ -66,6 +66,10 @@ Stills from a video made with Rekurse.
 
 Rekurse makes bright, moving and sometimes flickering light. If you or anyone nearby is sensitive to flashing images, don't use it. Stop if you feel unwell. The comfort limits are on by default; turning them down makes stronger light.
 
+## Credits
+
+Created, designed and directed by Kristian. Code written with AI assistance (Claude by Anthropic, plus other models), shaped through many design sessions and playtests.
+
 ## Inspirations
 
 **Dave Blair, [The Light Herder](https://www.thelightherder.com/).** An analog HD video-feedback kinetic sculpture built from cameras, monitors, video switchers and beam-splitter glass. Seeing it run in real time is what made me want a playable version of that loop. Rekurse is an independent project. It is not affiliated with or endorsed by Dave Blair, and it uses none of his footage, name or designs.
