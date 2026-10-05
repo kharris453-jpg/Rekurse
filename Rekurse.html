@@ -25,7 +25,7 @@
   "alternateName": "Rekurse, Reuse, Recycle",
   "applicationCategory": "MultimediaApplication",
   "operatingSystem": "Any modern browser with WebGL2",
-  "softwareVersion": "0.22.2",
+  "softwareVersion": "0.22.3",
   "description": "A playable video-feedback instrument for the browser. Recursive GPU feedback with painted time and friction, an optical medium (air, water, glass), Chladni plates and music that perturbs the picture. One HTML file, no install.",
   "keywords": "video feedback, generative visuals, audio reactive, music visualizer, WebGL2, live wallpaper, VJ, Chladni, browser instrument"
 }
@@ -663,7 +663,25 @@
     .quick-dial .range-shell { grid-column: 1 / -1; }
     .quick-label { font: 600 10px/1.2 Manrope, system-ui, sans-serif; }
     .quick-out { font: 500 9px/1.2 "DM Mono", monospace; opacity: .75; }
-    .quick-pill { position: fixed; right: 10px; bottom: 10px; z-index: 30; background: rgba(6, 10, 9, .6); color: #e9efe9; }
+    /* Room for the system bars: a phone wallpaper sits under the status bar and the navigation buttons. */
+    body { --wp-top: max(10px, env(safe-area-inset-top, 0px)); --wp-bottom: max(8px, env(safe-area-inset-bottom, 0px)); }
+    body.wp-phone { --wp-top: max(44px, calc(env(safe-area-inset-top, 0px) + 12px)); --wp-bottom: max(64px, calc(env(safe-area-inset-bottom, 0px) + 16px)); }
+    .quick-panel { bottom: var(--wp-bottom); max-height: calc(100dvh - var(--wp-top) - var(--wp-bottom)); }
+    .quick-pill { position: fixed; right: 10px; top: var(--wp-top); z-index: 30; background: rgba(6, 10, 9, .6); color: #e9efe9; }
+    /* Paged full controls (wallpaper with controls on a touch screen): one panel at a time over the picture. */
+    .wp-pager { display: grid; grid-template-columns: auto 1fr auto auto auto auto; gap: 6px; align-items: center; padding: 0 0 8px; }
+    .wp-pager[hidden] { display: none; }
+    .wp-pager .quick-button { min-width: 34px; border-color: var(--line); background: var(--panel-2); }
+    .wp-pager-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font: 600 10px/1.2 "DM Mono", monospace; text-transform: uppercase; }
+    body.wp-paged { padding: 0; overflow: hidden; background: #000; }
+    body.wp-paged main { display: block; width: 100%; min-height: 0; margin: 0; }
+    body.wp-paged .viewport { position: fixed; inset: 0; width: 100vw; height: 100dvh; min-height: 0; aspect-ratio: auto; border-radius: 0; box-shadow: none; }
+    body.wp-paged .hint, body.wp-paged .viewport-tools, body.wp-paged .seed-code { display: none; }
+    body.wp-paged .panel { position: fixed; left: 8px; right: 8px; bottom: var(--wp-bottom); z-index: 30; height: min(70dvh, calc(100dvh - var(--wp-top) - var(--wp-bottom))); padding: 10px; border-radius: 10px; background: var(--panel); color: var(--ink); }
+    body.wp-paged .panel > :not(.panel-strip):not(.wp-pager) { display: none !important; }
+    body.wp-paged .panel-strip { display: block; min-height: 0; flex: 1 1 auto; padding: 0; overflow: hidden; }
+    body.wp-paged .panel-strip > .strip-card { display: none; }
+    body.wp-paged .panel-strip > .strip-card.is-page { display: block; max-height: 100%; height: 100%; overflow: hidden; }
     .quick-back { margin: 10px 14px 0; }
     @media (max-width: 480px) { .quick-dials { grid-template-columns: 1fr 1fr; } }
 </style>
@@ -1380,7 +1398,7 @@
         <button class="action" id="clear">Clear</button>
         <button class="action wide" id="pause" aria-pressed="false">Pause loop</button>
       </div>
-      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.2</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
+      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.3</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
     </aside>
   </main>
 
@@ -1481,12 +1499,15 @@
       var wanderEnabled = false, wanderOrigin = null, wanderPhase = 0, wanderUpdateElapsed = 0;
       var gesturePlayStart = 0, gestureRecording = false, gesturePlaying = false, gestureStartedAt = 0, gesturePlaybackAt = 0, gestureEvents = [], gestureDuration = 0, applyingGesture = false;
       var macroIds = ['macroMotion', 'macroRecursion', 'macroColor'];
-      var APP_VERSION = '0.22.2';
+      var APP_VERSION = '0.22.3';
       var boot = window.__FEEDBACK_BOOT__ || null;
       // A wallpaper export boots from embedded data. The light kind (no controls) runs the wallpaper mode below;
       // the "with controls" kind (boot.controls) is the full app that just starts from the exported state.
       var wallpaperBoot = !!(boot && (boot.lively || boot.wallpaper));
       var livelyMode = wallpaperBoot && !boot.controls;
+      // A wallpaper on a phone: it keeps a portrait picture when the host briefly reports landscape (after a
+      // landscape video, say), and its on-screen buttons keep clear of the system bars.
+      var phoneWallpaper = wallpaperBoot && !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) && Math.min(screen.width || 0, screen.height || 0) > 0 && Math.min(screen.width, screen.height) <= 600;
       if (livelyMode) {
         if (boot.touch === false) document.body.classList.add('no-touch');
         maxRenderPixels = livelyMaxRenderPixels;
@@ -3712,6 +3733,9 @@
       function sizeCanvases() {
         if (offlineRender && offlineRender.saved) return; // the render keeps its size; a resize would restart the GPU renderer
         var rect = viewport.getBoundingClientRect();
+        // Portrait lock: a phone wallpaper that is already running in portrait ignores a landscape viewport
+        // (the canvas just stretches until the host turns back), so the loop never restarts sideways.
+        if (phoneWallpaper && rect.width > rect.height && dispH > dispW) return;
         var profile = resolutionProfiles[renderMode];
         if (profile.height) {
           var fixedDpr = profile.height / Math.max(1, rect.height);
@@ -5437,7 +5461,9 @@
          the wallpaper opens on one screen of the controls used while playing: mic, reactivity, replay,
          the saved scenes and the main dials, laid over the full-screen picture. Its sliders are
          proxies: they move the real controls (same events, same code paths) and follow them back.
-         "All controls" switches to the full app layout; "Hide" leaves only a small button. */
+         "All controls" switches to the full app layout; "Hide" leaves only a small button. On a touch
+         screen the host cannot scroll, so "All controls" pages through the panels one at a time instead,
+         with buttons to step between panels and up and down inside a tall one. */
       (function() {
         if (!(wallpaperBoot && boot.controls)) return;
         var DIALS = ['reactivity', 'micSensitivity', 'zoom', 'spin', 'gain', 'persistence', 'contrast', 'saturation', 'hue', 'bloom', 'coupling', 'mediumDensity', 'replayHold', 'replayGlide'];
@@ -5456,9 +5482,51 @@
         pill.type = 'button'; pill.className = 'quick-pill'; pill.textContent = 'Controls'; pill.hidden = true;
         var back = document.createElement('button');
         back.type = 'button'; back.className = 'action wide quick-back'; back.textContent = 'Back to compact controls';
+        var touchHost = !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches);
+        if (phoneWallpaper) document.body.classList.add('wp-phone');
+        var pager = document.createElement('div');
+        pager.className = 'wp-pager'; pager.hidden = true;
+        pager.innerHTML = '<button type="button" class="quick-button" id="pagePrev" aria-label="Previous panel">\u25C0</button>' +
+          '<span class="wp-pager-name" id="pageName"></span>' +
+          '<button type="button" class="quick-button" id="pageNext" aria-label="Next panel">\u25B6</button>' +
+          '<button type="button" class="quick-button" id="pageUp" aria-label="Scroll panel up">\u25B2</button>' +
+          '<button type="button" class="quick-button" id="pageDown" aria-label="Scroll panel down">\u25BC</button>' +
+          '<button type="button" class="quick-button" id="pageCompact">Compact</button>';
         var main = document.querySelector('main'), panel = document.querySelector('.panel');
         main.appendChild(sheet); main.appendChild(pill);
         panel.insertBefore(back, panel.firstChild);
+        panel.insertBefore(pager, panel.firstChild);
+        var pageIndex = 0;
+        function pageCards() {
+          return Array.prototype.filter.call(panel.querySelectorAll('.panel-strip > .strip-card'), function(c) { return !c.hidden; });
+        }
+        function showPage(step) {
+          var cards = pageCards();
+          if (!cards.length) return;
+          pageIndex = (pageIndex + step + cards.length) % cards.length;
+          cards.forEach(function(c, i) { c.classList.toggle('is-page', i === pageIndex); });
+          var card = cards[pageIndex];
+          // Open the panel's own sections so its dials show without another tap.
+          [card].concat(Array.prototype.slice.call(card.querySelectorAll('.is-collapsed'))).forEach(function(holder) {
+            if (!holder.classList.contains('is-collapsed')) return;
+            holder.classList.remove('is-collapsed');
+            var t = holder.querySelector(':scope > .section-toggle');
+            if (t) t.setAttribute('aria-expanded', 'true');
+          });
+          card.scrollTop = 0;
+          var label = card.querySelector('.section-toggle, .section-label');
+          pager.querySelector('#pageName').textContent = (pageIndex + 1) + ' / ' + cards.length + (label ? ' \u00B7 ' + label.textContent.replace(/[+\u2212-]\s*$/, '').trim() : '');
+          Array.prototype.forEach.call(card.querySelectorAll('input[type="range"]'), syncRangeKnob);
+        }
+        function scrollPage(dir) {
+          var card = pageCards()[pageIndex];
+          if (card) card.scrollTop += dir * Math.max(80, card.clientHeight * .8);
+        }
+        pager.querySelector('#pagePrev').addEventListener('click', function() { showPage(-1); });
+        pager.querySelector('#pageNext').addEventListener('click', function() { showPage(1); });
+        pager.querySelector('#pageUp').addEventListener('click', function() { scrollPage(-1); });
+        pager.querySelector('#pageDown').addEventListener('click', function() { scrollPage(1); });
+        pager.querySelector('#pageCompact').addEventListener('click', function() { setMode('quick'); });
         var dials = sheet.querySelector('#quickDials'), pairs = [];
         DIALS.forEach(function(id) {
           var real = document.getElementById(id);
@@ -5515,11 +5583,13 @@
         function setMode(mode) {
           document.body.classList.toggle('wp-quick', mode === 'quick');
           document.body.classList.toggle('wp-quick-hidden', mode === 'hidden');
-          sheet.hidden = mode !== 'quick'; pill.hidden = mode !== 'hidden'; back.hidden = mode !== 'full';
+          document.body.classList.toggle('wp-paged', mode === 'paged');
+          sheet.hidden = mode !== 'quick'; pill.hidden = mode !== 'hidden'; back.hidden = mode !== 'full'; pager.hidden = mode !== 'paged';
+          if (mode === 'paged') showPage(0);
           if (mode === 'quick') { syncScenes(); syncButtons(); pairs.forEach(function(p) { p.sync(); syncRangeKnob(p.proxy); }); }
           if (started) sizeCanvases();
         }
-        sheet.querySelector('#quickAll').addEventListener('click', function() { setMode('full'); });
+        sheet.querySelector('#quickAll').addEventListener('click', function() { setMode(touchHost ? 'paged' : 'full'); });
         sheet.querySelector('#quickHide').addEventListener('click', function() { setMode('hidden'); });
         pill.addEventListener('click', function() { setMode('quick'); });
         back.addEventListener('click', function() { setMode('quick'); window.scrollTo(0, 0); });
@@ -5792,6 +5862,12 @@
       renderSceneList();
       if ('ResizeObserver' in window) new ResizeObserver(function() { sizeCanvases(); queueFractalRender(); }).observe(viewport);
       else window.addEventListener('resize', function() { sizeCanvases(); queueFractalRender(); });
+      // A wallpaper host can resize its page while the page is paused and never report it; check again.
+      if (wallpaperBoot) {
+        window.setInterval(function() { if (!document.hidden) sizeCanvases(); }, 1000);
+        document.addEventListener('visibilitychange', function() { if (!document.hidden) sizeCanvases(); });
+        window.addEventListener('orientationchange', function() { window.setTimeout(sizeCanvases, 300); });
+      }
       sizeCanvases();
       syncFractalMode();
       startWorkerRenderer();
