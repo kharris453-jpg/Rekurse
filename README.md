@@ -19,6 +19,7 @@ It is one HTML file. Download it, open it in Chrome or Edge, and play. No instal
 - **Homeostasis.** A luminance ledger keeps account of the light in the loop and inhibits regions that are running away. The loop stays alive for hours instead of burning out to white or fading to black, and it keeps finding new balance points while you play.
 - **Physics, not canned effects.** Past frames sit inside a simulated sheet of air, water or glass. Older frames lie deeper in it, so they are bent, tinted and colour-split more, and caustics play across the surface. Reaction-diffusion, Belousov–Zhabotinsky waves and Chladni plates can grow inside the loop too.
 - **Music as a perturbation.** A beat tracker and per-band analysis push on the loop instead of driving it, so the sound and the picture shape each other. A plate can be played by the music directly.
+- **Endless range.** The recipe dials and switches alone allow more than 10<sup>125</sup> distinct setups, more than the number of atoms in the observable universe (about 10<sup>80</sup>). And because the loop carries its own history, even the same setup never plays out the same way twice.
 - **Comfort guardrails.** A luminance ceiling, a flash guard and band softening are on by default.
 
 ## Make things with it
