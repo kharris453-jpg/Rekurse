@@ -28,6 +28,14 @@ It is one HTML file. Download it, open it in Chrome or Edge, and play. No instal
 - **Video.** Record live, or render a whole song offline from an audio file. A render draws every frame at full quality with the sound in exact sync, however heavy the scene.
 - **Live wallpapers.** Export a wallpaper for [Lively](https://www.rocksdanister.com/lively/) on Windows or an HTML wallpaper app on Android. Choose a light picture-only version, or one with a compact live control panel.
 
+## The controls
+
+Every dial sits in one scrolling strip of panels, grouped by what it does to the loop: energy in, energy out, shape, the physical medium, sources, the excitable media and the guardrails.
+
+![The Rekurse control strip: recipes, music response, memory and medium, sources and display](screenshots/controls-1.jpg)
+
+![The Rekurse control strip: energy in and out, shape, Belousov-Zhabotinsky, Chladni plate and guardrails](screenshots/controls-2.jpg)
+
 ## Gallery
 
 Stills from a video made with Rekurse.
@@ -37,6 +45,9 @@ Stills from a video made with Rekurse.
 <tr><td><img src="screenshots/rekurse-4.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-5.jpg" alt="Rekurse frame"></td></tr>
 <tr><td><img src="screenshots/rekurse-6.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-7.jpg" alt="Rekurse frame"></td></tr>
 <tr><td><img src="screenshots/rekurse-8.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-9.jpg" alt="Rekurse frame"></td></tr>
+<tr><td><img src="screenshots/rekurse-10.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-11.jpg" alt="Rekurse frame"></td></tr>
+<tr><td><img src="screenshots/rekurse-12.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-13.jpg" alt="Rekurse frame"></td></tr>
+<tr><td><img src="screenshots/rekurse-14.jpg" alt="Rekurse frame"></td><td><img src="screenshots/rekurse-15.jpg" alt="Rekurse frame"></td></tr>
 </table>
 
 ## Safety
