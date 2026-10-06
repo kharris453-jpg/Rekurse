@@ -25,7 +25,7 @@
   "alternateName": "Rekurse, Reuse, Recycle",
   "applicationCategory": "MultimediaApplication",
   "operatingSystem": "Any modern browser with WebGL2",
-  "softwareVersion": "0.22.4",
+  "softwareVersion": "0.22.5",
   "description": "A playable video-feedback instrument for the browser. Recursive GPU feedback with painted time and friction, an optical medium (air, water, glass), Chladni plates and music that perturbs the picture. One HTML file, no install.",
   "keywords": "video feedback, generative visuals, audio reactive, music visualizer, WebGL2, live wallpaper, VJ, Chladni, browser instrument"
 }
@@ -652,7 +652,7 @@
     body.wp-quick .panel, body.wp-quick-hidden .panel, body.wp-quick .hint, body.wp-quick-hidden .hint, body.wp-quick .viewport-tools, body.wp-quick-hidden .viewport-tools, body.wp-quick .seed-code, body.wp-quick-hidden .seed-code { display: none; }
     .quick-panel { position: fixed; left: 8px; right: 8px; bottom: 8px; z-index: 30; max-height: calc(100dvh - 16px); overflow: hidden; display: grid; gap: 8px; padding: 10px; border: 1px solid rgba(255, 255, 255, .14); border-radius: 10px; background: rgba(6, 10, 9, .72); color: #e9efe9; -webkit-backdrop-filter: blur(6px); backdrop-filter: blur(6px); }
     .quick-panel[hidden], .quick-pill[hidden], .quick-back[hidden] { display: none; }
-    .quick-bar { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 6px; }
+    .quick-bar { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; }
     .quick-button, .quick-scene, .quick-pill { min-height: 32px; padding: 4px 6px; border: 1px solid rgba(255, 255, 255, .2); border-radius: 6px; background: rgba(255, 255, 255, .08); color: inherit; font: 700 11px/1.15 Manrope, system-ui, sans-serif; cursor: pointer; }
     .quick-button[aria-pressed="true"] { background: rgba(120, 230, 190, .28); border-color: rgba(120, 230, 190, .6); }
     .quick-scenes { display: flex; flex-wrap: wrap; gap: 6px; }
@@ -683,6 +683,17 @@
     body.wp-paged .panel-strip > .strip-card { display: none; }
     body.wp-paged .panel-strip > .strip-card.is-page { display: block; max-height: 100%; height: 100%; overflow: hidden; }
     .quick-back { margin: 10px 14px 0; }
+    /* Fading controls on the wallpaper: a double tap on the picture brings them back. */
+    .quick-panel, body.wp-paged .panel, .quick-pill { transition: opacity .6s ease; }
+    body.wp-faded .quick-panel, body.wp-faded.wp-paged .panel, body.wp-faded .quick-pill { opacity: 0; pointer-events: none; }
+    body.wp-wide .quick-panel, body.wp-wide.wp-paged .panel { right: auto; width: calc(var(--wp-screen-w) - 12px); }
+    /* Phones: a smaller sheet so more of the picture shows (three dials per row, tighter buttons). */
+    body.wp-phone .quick-panel { left: 6px; right: 6px; gap: 6px; padding: 7px; }
+    body.wp-phone .quick-bar { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; }
+    body.wp-phone .quick-button, body.wp-phone .quick-scene { min-height: 26px; padding: 2px 4px; font-size: 10px; }
+    body.wp-phone .quick-dials { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0 8px; }
+    body.wp-phone .quick-label { font-size: 9px; }
+    body.wp-phone .quick-out { font-size: 8px; }
     @media (max-width: 480px) { .quick-dials { grid-template-columns: 1fr 1fr; } }
 </style>
 </head>
@@ -1398,7 +1409,7 @@
         <button class="action" id="clear">Clear</button>
         <button class="action wide" id="pause" aria-pressed="false">Pause loop</button>
       </div>
-      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.4</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
+      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.5</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
     </aside>
   </main>
 
@@ -1469,7 +1480,13 @@
       var useGlCore = !/[?&]glcore=0\b/.test(location.search);
       var warpPathLabel = '';
       var simDetail = 'auto';
-      try { var storedDetail = localStorage.getItem('pwt.simDetail'); if (storedDetail && (storedDetail === 'auto' || simDetailLevels[storedDetail])) simDetail = storedDetail; } catch (e) {}
+      // A wallpaper keeps its own choice (it may share the editor's storage when served from the same address),
+      // and otherwise starts from the Simulation detail it was exported with.
+      var wpBootData = window.__FEEDBACK_BOOT__ || null, wpDetail = !!(wpBootData && (wpBootData.lively || wpBootData.wallpaper));
+      var simDetailKey = wpDetail ? 'pwt.simDetail.wallpaper' : 'pwt.simDetail';
+      var simDetailExported = wpDetail && wpBootData.current && simDetailLevels[wpBootData.current.simDetail] ? wpBootData.current.simDetail : '';
+      if (simDetailExported) simDetail = simDetailExported;
+      try { var storedDetail = localStorage.getItem(simDetailKey); if (storedDetail && (storedDetail === 'auto' || simDetailLevels[storedDetail])) simDetail = storedDetail; } catch (e) {}
       function resolvedSimDetail() { return simDetail === 'auto' ? (finePointer ? 'balanced' : 'light') : simDetail; }
       var maxRenderPixels = 1400000, renderPixelCeiling = 1400000, mediumScale = .5;
       function applySimDetail() {
@@ -1499,7 +1516,7 @@
       var wanderEnabled = false, wanderOrigin = null, wanderPhase = 0, wanderUpdateElapsed = 0;
       var gesturePlayStart = 0, gestureRecording = false, gesturePlaying = false, gestureStartedAt = 0, gesturePlaybackAt = 0, gestureEvents = [], gestureDuration = 0, applyingGesture = false;
       var macroIds = ['macroMotion', 'macroRecursion', 'macroColor'];
-      var APP_VERSION = '0.22.4';
+      var APP_VERSION = '0.22.5';
       var boot = window.__FEEDBACK_BOOT__ || null;
       // A wallpaper export boots from embedded data. The light kind (no controls) runs the wallpaper mode below;
       // the "with controls" kind (boot.controls) is the full app that just starts from the exported state.
@@ -1510,7 +1527,8 @@
       var phoneWallpaper = wallpaperBoot && !!(window.matchMedia && window.matchMedia('(pointer: coarse)').matches) && Math.min(screen.width || 0, screen.height || 0) > 0 && Math.min(screen.width, screen.height) <= 600;
       if (livelyMode) {
         if (boot.touch === false) document.body.classList.add('no-touch');
-        maxRenderPixels = livelyMaxRenderPixels;
+        if (simDetail === 'auto') maxRenderPixels = livelyMaxRenderPixels;
+        else livelyMaxRenderPixels = maxRenderPixels;
         document.body.classList.add('lively-mode');
         viewport.setAttribute('aria-label', 'Audio-reactive analog video feedback wallpaper');
       }
@@ -1570,6 +1588,7 @@
       var fullscreenToggle = document.getElementById('fullscreenToggle');
       var overlayHideDelay = document.getElementById('overlayHideDelay');
       var overlayMode = false, overlayHidden = false, overlayHideTimer = 0, lastTouchTap = null, lastTouchGestureAt = 0;
+      var wallpaperDoubleTap = null; // set by the wallpaper's compact controls: a double tap fades or shows them
 
       var presets = {
         prism: {
@@ -3210,6 +3229,7 @@
           overlay: imageOverlayData ? { data: imageOverlayData, blend: overlayBlend.value, audio: overlayAudio.value, fit: overlayFit.value } : null,
           resolution: renderMode,
           frameCap: frameCap,
+          simDetail: simDetail,
           reactivity: Number(reactivityControl.value),
           inputSensitivity: Number(micSensitivity.value),
           motionStrength: Number(motionStrength.value),
@@ -3743,7 +3763,8 @@
         if (phoneWallpaper && rect.width > rect.height && dispH > dispW) return;
         var profile = resolutionProfiles[renderMode];
         if (profile.height) {
-          var fixedDpr = profile.height / Math.max(1, rect.height);
+          // "1440p" sets the short side, so a portrait screen gets 1440 wide, not 1440 tall.
+          var fixedDpr = profile.height / Math.max(1, Math.min(rect.width, rect.height));
           dpr = Math.max(.5, Math.min(fixedDpr, 4096 / Math.max(1, rect.width), 4096 / Math.max(1, rect.height)));
         } else {
           var nativeDpr = Math.min(window.devicePixelRatio || 1, 1.75);
@@ -3850,7 +3871,7 @@
         simDetailSelect.value = simDetail;
         simDetailSelect.addEventListener('change', function() {
           simDetail = simDetailLevels[this.value] ? this.value : 'auto';
-          try { localStorage.setItem('pwt.simDetail', simDetail); } catch (e) {}
+          try { localStorage.setItem(simDetailKey, simDetail); } catch (e) {}
           applySimDetail();
           lastQualityAdjustment = performance.now();
           if (workerActive && renderWorker) renderWorker.postMessage({ type: 'detail', medScale: mediumScale });
@@ -3887,7 +3908,7 @@
       viewport.addEventListener('dblclick', function(event) {
         if (performance.now() - lastTouchGestureAt < 600) return;
         event.preventDefault();
-        toggleOverlayVisibility();
+        if (wallpaperDoubleTap) wallpaperDoubleTap(); else toggleOverlayVisibility();
       });
       viewport.addEventListener('pointerup', function(event) {
         if (event.pointerType !== 'touch') return;
@@ -3897,7 +3918,7 @@
           lastTouchTap = null;
           lastTouchGestureAt = now;
           event.preventDefault();
-          toggleOverlayVisibility();
+          if (wallpaperDoubleTap) wallpaperDoubleTap(); else toggleOverlayVisibility();
         } else lastTouchTap = tap;
       });
       function fullscreenChanged() {
@@ -5493,7 +5514,10 @@
          proxies: they move the real controls (same events, same code paths) and follow them back.
          "All controls" switches to the full app layout; "Hide" leaves only a small button. On a touch
          screen the host cannot scroll, so "All controls" pages through the panels one at a time instead,
-         with buttons to step between panels and up and down inside a tall one. */
+         with buttons to step between panels and up and down inside a tall one.
+         The controls fade out after the Overlay auto-hide time without a touch (10 s unless changed; "Hide"
+         fades them at once) and a double tap on the picture brings them back (or fades them). "Detail" steps
+         the Simulation detail (Light, Balanced, Full) so a phone can reach full resolution. */
       (function() {
         if (!(wallpaperBoot && boot.controls)) return;
         var DIALS = ['reactivity', 'micSensitivity', 'zoom', 'spin', 'gain', 'persistence', 'contrast', 'saturation', 'hue', 'bloom', 'coupling', 'mediumDensity', 'replayHold', 'replayGlide'];
@@ -5505,6 +5529,7 @@
           '<button type="button" class="quick-button" id="quickMic"></button>' +
           '<button type="button" class="quick-button" id="quickSystem"></button>' +
           '<button type="button" class="quick-button" id="quickReplay"></button>' +
+          '<button type="button" class="quick-button" id="quickDetail"></button>' +
           '<button type="button" class="quick-button" id="quickAll">All controls</button>' +
           '<button type="button" class="quick-button" id="quickHide">Hide</button></div>' +
           '<div class="quick-scenes" id="quickScenes"></div><div class="quick-dials" id="quickDials"></div>';
@@ -5619,15 +5644,47 @@
           if (mode === 'quick') { syncScenes(); syncButtons(); pairs.forEach(function(p) { p.sync(); syncRangeKnob(p.proxy); }); }
           if (started) sizeCanvases();
         }
+        var detailButton = sheet.querySelector('#quickDetail'), detailOrder = ['light', 'balanced', 'full'];
+        function syncDetail() {
+          var name = resolvedSimDetail();
+          detailButton.textContent = 'Detail: ' + simDetailLevels[name].label + (simDetail === 'auto' ? ' (auto)' : '');
+        }
+        detailButton.addEventListener('click', function() {
+          var select = document.getElementById('simDetail'); if (!select) return;
+          select.value = detailOrder[(detailOrder.indexOf(resolvedSimDetail()) + 1) % detailOrder.length];
+          select.dispatchEvent(new Event('change', { bubbles: true }));
+          syncDetail();
+        });
+        syncDetail();
+        // Fading: the controls (compact sheet, or the paged panel) fade after a quiet spell and come back on a
+        // double tap. While faded they take no touches, so drags reach the picture.
+        var fadeTimer = 0, faded = false;
+        function fadeDelay() { var s = Number(overlayHideDelay && overlayHideDelay.value); return Number.isFinite(s) ? s : 10; }
+        function setFaded(on) {
+          faded = !!on; document.body.classList.toggle('wp-faded', faded);
+          window.clearTimeout(fadeTimer);
+          if (!faded) armFade();
+        }
+        function armFade() {
+          window.clearTimeout(fadeTimer);
+          var s = fadeDelay(); if (!s || faded) return;
+          fadeTimer = window.setTimeout(function() { setFaded(true); }, s * 1000);
+        }
+        wallpaperDoubleTap = function() { setFaded(!faded); };
+        [sheet, panel].forEach(function(el) {
+          ['pointerdown', 'input', 'change', 'focusin'].forEach(function(type) { el.addEventListener(type, function() { if (!faded) armFade(); }, { passive: true }); });
+        });
+        if (overlayHideDelay) overlayHideDelay.addEventListener('change', armFade);
         sheet.querySelector('#quickAll').addEventListener('click', function() { setMode(touchHost ? 'paged' : 'full'); });
-        sheet.querySelector('#quickHide').addEventListener('click', function() { setMode('hidden'); });
+        sheet.querySelector('#quickHide').addEventListener('click', function() { setFaded(true); });
         pill.addEventListener('click', function() { setMode('quick'); });
         back.addEventListener('click', function() { setMode('quick'); window.scrollTo(0, 0); });
         // Replay and wander move the dials without input events; follow them a few times a second while shown.
-        window.setInterval(function() { if (!sheet.hidden) { pairs.forEach(function(p) { p.sync(); }); syncButtons(); syncScenes(); } }, 250);
+        window.setInterval(function() { if (!sheet.hidden && !faded) { pairs.forEach(function(p) { p.sync(); }); syncButtons(); syncScenes(); syncDetail(); } }, 250);
         var started = false;
         setMode('quick');
         started = true;
+        armFade();
       })();
 
       // Chrome and Edge (Chromium) run the GPU renderer and video export best; Firefox and Safari are much slower.
@@ -5895,7 +5952,15 @@
       else window.addEventListener('resize', function() { sizeCanvases(); queueFractalRender(); });
       // A wallpaper host can resize its page while the page is paused and never report it; check again.
       if (wallpaperBoot) {
-        window.setInterval(function() { if (!document.hidden) sizeCanvases(); }, 1000);
+        // Some hosts (Loomview after a landscape video) leave the page in a landscape-sized window on a portrait
+        // screen, showing only its left part. Keep the controls inside the screen's width so they stay usable.
+        var keepControlsOnScreen = function() {
+          var short = Math.min(screen.width || 0, screen.height || 0), wide = phoneWallpaper && short > 0 && window.innerWidth > short + 40;
+          document.body.classList.toggle('wp-wide', wide);
+          if (wide) document.body.style.setProperty('--wp-screen-w', short + 'px');
+        };
+        keepControlsOnScreen();
+        window.setInterval(function() { if (!document.hidden) { sizeCanvases(); keepControlsOnScreen(); } }, 1000);
         document.addEventListener('visibilitychange', function() { if (!document.hidden) sizeCanvases(); });
         window.addEventListener('orientationchange', function() { window.setTimeout(sizeCanvases, 300); });
       }

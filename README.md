@@ -10,7 +10,7 @@ It is one HTML file. Download it, open it in Chrome or Edge, and play. No instal
 
 ## Play it
 
-1. Download the Rekurse HTML file (for example `Rekurse-0.22.4.html`) from the [latest release](../../releases/latest).
+1. Download the Rekurse HTML file (for example `Rekurse-0.22.5.html`) from the [latest release](../../releases/latest).
 2. Open it in **Chrome or Edge**. Firefox and Safari run it, but much more slowly, and video export needs Chrome or Edge.
 3. Read the safety notice, then turn the dials. Start with the presets, then use the microphone, system audio or a music file to let sound into the loop.
 
