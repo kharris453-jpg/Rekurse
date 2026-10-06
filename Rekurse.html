@@ -25,7 +25,7 @@
   "alternateName": "Rekurse, Reuse, Recycle",
   "applicationCategory": "MultimediaApplication",
   "operatingSystem": "Any modern browser with WebGL2",
-  "softwareVersion": "0.22.5",
+  "softwareVersion": "0.22.6",
   "description": "A playable video-feedback instrument for the browser. Recursive GPU feedback with painted time and friction, an optical medium (air, water, glass), Chladni plates and music that perturbs the picture. One HTML file, no install.",
   "keywords": "video feedback, generative visuals, audio reactive, music visualizer, WebGL2, live wallpaper, VJ, Chladni, browser instrument"
 }
@@ -669,7 +669,7 @@
     .quick-panel { bottom: var(--wp-bottom); max-height: calc(100dvh - var(--wp-top) - var(--wp-bottom)); }
     .quick-pill { position: fixed; right: 10px; top: var(--wp-top); z-index: 30; background: rgba(6, 10, 9, .6); color: #e9efe9; }
     /* Paged full controls (wallpaper with controls on a touch screen): one panel at a time over the picture. */
-    .wp-pager { display: grid; grid-template-columns: auto 1fr auto auto auto auto; gap: 6px; align-items: center; padding: 0 0 8px; }
+    .wp-pager { display: grid; grid-template-columns: auto auto 1fr auto auto auto; gap: 6px; align-items: center; padding: 0 0 8px; }
     .wp-pager[hidden] { display: none; }
     .wp-pager .quick-button { min-width: 34px; border-color: var(--line); background: var(--panel-2); }
     .wp-pager-name { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; text-align: center; font: 600 10px/1.2 "DM Mono", monospace; text-transform: uppercase; }
@@ -1409,7 +1409,7 @@
         <button class="action" id="clear">Clear</button>
         <button class="action wide" id="pause" aria-pressed="false">Pause loop</button>
       </div>
-      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.5</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
+      <p class="about-credit" id="aboutCredit"><strong id="appVersion">Rekurse 0.22.6</strong> · <button class="link-button" id="noticeOpen" type="button">Safety &amp; terms</button> · Inspired by Dave Blair's <a href="https://www.thelightherder.com/" target="_blank" rel="noopener noreferrer">The Light Herder</a>. Rekurse is an independent project, not affiliated with or endorsed by Dave Blair, and uses none of his footage, name or designs.</p>
     </aside>
   </main>
 
@@ -1516,7 +1516,7 @@
       var wanderEnabled = false, wanderOrigin = null, wanderPhase = 0, wanderUpdateElapsed = 0;
       var gesturePlayStart = 0, gestureRecording = false, gesturePlaying = false, gestureStartedAt = 0, gesturePlaybackAt = 0, gestureEvents = [], gestureDuration = 0, applyingGesture = false;
       var macroIds = ['macroMotion', 'macroRecursion', 'macroColor'];
-      var APP_VERSION = '0.22.5';
+      var APP_VERSION = '0.22.6';
       var boot = window.__FEEDBACK_BOOT__ || null;
       // A wallpaper export boots from embedded data. The light kind (no controls) runs the wallpaper mode below;
       // the "with controls" kind (boot.controls) is the full app that just starts from the exported state.
@@ -5541,12 +5541,12 @@
         if (phoneWallpaper) document.body.classList.add('wp-phone');
         var pager = document.createElement('div');
         pager.className = 'wp-pager'; pager.hidden = true;
-        pager.innerHTML = '<button type="button" class="quick-button" id="pagePrev" aria-label="Previous panel">\u25C0</button>' +
+        pager.innerHTML = '<button type="button" class="quick-button" id="pageCompact">Compact</button>' +
+          '<button type="button" class="quick-button" id="pagePrev" aria-label="Previous panel">\u25C0</button>' +
           '<span class="wp-pager-name" id="pageName"></span>' +
           '<button type="button" class="quick-button" id="pageNext" aria-label="Next panel">\u25B6</button>' +
           '<button type="button" class="quick-button" id="pageUp" aria-label="Scroll panel up">\u25B2</button>' +
-          '<button type="button" class="quick-button" id="pageDown" aria-label="Scroll panel down">\u25BC</button>' +
-          '<button type="button" class="quick-button" id="pageCompact">Compact</button>';
+          '<button type="button" class="quick-button" id="pageDown" aria-label="Scroll panel down">\u25BC</button>';
         var main = document.querySelector('main'), panel = document.querySelector('.panel');
         main.appendChild(sheet); main.appendChild(pill);
         panel.insertBefore(back, panel.firstChild);
@@ -5635,7 +5635,9 @@
             sceneBox.appendChild(b);
           });
         }
+        var currentMode = 'quick';
         function setMode(mode) {
+          currentMode = mode;
           document.body.classList.toggle('wp-quick', mode === 'quick');
           document.body.classList.toggle('wp-quick-hidden', mode === 'hidden');
           document.body.classList.toggle('wp-paged', mode === 'paged');
@@ -5670,7 +5672,12 @@
           var s = fadeDelay(); if (!s || faded) return;
           fadeTimer = window.setTimeout(function() { setFaded(true); }, s * 1000);
         }
-        wallpaperDoubleTap = function() { setFaded(!faded); };
+        // Double tap: from the full or paged controls it always returns to the compact view (so it can never be
+        // lost off screen); in the compact view it fades the controls or brings them back.
+        wallpaperDoubleTap = function() {
+          if (currentMode !== 'quick') { setMode('quick'); setFaded(false); window.scrollTo(0, 0); }
+          else setFaded(!faded);
+        };
         [sheet, panel].forEach(function(el) {
           ['pointerdown', 'input', 'change', 'focusin'].forEach(function(type) { el.addEventListener(type, function() { if (!faded) armFade(); }, { passive: true }); });
         });
